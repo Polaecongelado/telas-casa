@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle de Telas</title>
+    <style>
+        body { margin: 0; background-color: #000; color: #fff; font-family: Arial, sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #config, #admin-panel { background: #222; padding: 20px; border-radius: 10px; text-align: center; display: block; z-index: 10; max-width: 90%; }
+        #admin-panel { display: none; }
+        input, button { padding: 12px; margin: 10px 0; width: 100%; border-radius: 5px; border: none; font-size: 16px; box-sizing: border-box; }
+        input { background: #333; color: white; }
+        button { background: #28a745; color: white; cursor: pointer; font-weight: bold; }
+        button.btn-close { background: #dc3545; }
+        button.btn-mode { background: #007bff; }
+        #display-img { max-width: 100%; max-height: 100%; object-fit: contain; display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+        #status-msg { color: #666; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DAS TVS (Fica esperando) -->
+    <div id="status-msg">Aguardando comando do painel...</div>
+    <img id="display-img" src="" alt="Conteúdo Transmitido">
+
+    <!-- SELEÇÃO DE MODO INICIAL -->
+    <div id="config">
+        <h2>Configurar este Dispositivo</h2>
+        <p>Se esta for a TV, não clique em nada. Se for o seu tablet, clique abaixo:</p>
+        <button class="btn-mode" onclick="ativarAdmin()">Virar Administrador</button>
+    </div>
+
+    <!-- PAINEL DO ADMINISTRADOR -->
+    <div id="admin-panel">
+        <h2>Painel de Controle</h2>
+        <input type="text" id="imgUrl" placeholder="Cole o link da imagem aqui">
+        <button onclick="transmitir()">Transmitir Imagem</button>
+        <button class="btn-close" onclick="fecharTela()">🔴 FECHAR TELA</button>
+    </div>
+
+    <script>
+        // Utiliza um canal público do navegador para sincronizar os dispositivos próximos
+        const canal = new BroadcastChannel('controle_casa_tvs');
+
+        // Escuta os comandos enviados pelo administrador
+        canal.onmessage = (evento) => {
+            const img = document.getElementById('display-img');
+            const msg = document.getElementById('status-msg');
+            
+            if (evento.data.comando === 'mostrar') {
+                img.src = evento.data.url;
+                img.style.display = 'block';
+                msg.style.display = 'none';
+            } else if (evento.data.comando === 'fechar') {
+                img.src = '';
+                img.style.display = 'none';
+                msg.style.display = 'block';
+            }
+        };
+
+        function activarAdmin() {
+            document.getElementById('config').style.display = 'none';
+            document.getElementById('status-msg').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+        }
+
+        function transmitir() {
+            const url = document.getElementById('imgUrl').value;
+            if (url) {
+                canal.postMessage({ comando: 'mostrar', url: url });
+            }
+        }
+
+        function fecharTela() {
+            canal.postMessage({ comando: 'fechar' });
+        }
+    </script>
+</body>
+</html>
